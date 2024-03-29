@@ -12,7 +12,7 @@ assets.load_assets()
 
 common.set_current_state(states.GamePlay())
 
-title = pygame.image.load("assets/title_small.png").convert_alpha()
+title = pygame.image.load("assets/title.png").convert_alpha()
 ice = pygame.image.load("assets/ice_cube.png").convert_alpha()
 
 running = True
