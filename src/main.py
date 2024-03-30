@@ -39,9 +39,9 @@ while running:
     #     ),
     # )
     #
-    # for y in range(settings.HEIGHT // 16):
-    #     for x in range(settings.WIDTH // 16):
-    #         screen.blit(ice, (x * 16, y * 16))
+    for y in range(settings.HEIGHT // 16):
+        for x in range(settings.WIDTH // 16):
+            screen.blit(ice, (x * 16, y * 16))
 
     screen.blit(title, (5, 5))
 
