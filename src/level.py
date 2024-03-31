@@ -61,8 +61,8 @@ class Level:
         self.tile_layers = [self.background, self.colliders]
 
 
-def get_tiles(data: dict, layer_name: str, tile_set: TileSet):
-    tiles = {}
+def get_tiles(data: dict, layer_name: str, tile_set: TileSet) -> dict[tuple[int, int], Tile]:
+    grid_map = {}
     (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name)
     width, height = tile_set.tile_width, tile_set.tile_height
 
@@ -76,13 +76,13 @@ def get_tiles(data: dict, layer_name: str, tile_set: TileSet):
         x = x_off + col * width
         y = y_off + row * height
 
-        tiles[(grid_x, grid_y)] = Tile(
+        grid_map[(grid_x, grid_y)] = Tile(
             position=(x, y),
             grid_position=(grid_x, grid_y),
             image=tile_set.tiles[tile_idx],
         )
 
-    return tiles
+    return grid_map
 
 
 def get_tile_map(
