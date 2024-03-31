@@ -12,7 +12,7 @@ assets.load_assets()
 
 common.set_current_state(states.GamePlay())
 
-title = pygame.image.load("assets/title.png").convert_alpha()
+title = pygame.image.load("assets/title_wrapped.png").convert_alpha()
 ice = pygame.image.load("assets/ice_cube.png").convert_alpha()
 
 running = True
@@ -43,7 +43,7 @@ while running:
         for x in range(settings.WIDTH // 16):
             screen.blit(ice, (x * 16, y * 16))
 
-    screen.blit(title, (5, 5))
+    screen.blit(title, title.get_rect(center=(settings.WIDTH // 2, settings.HEIGHT // 2 - 20)))
 
     common.get_current_state().update()
     common.get_current_state().draw(common.screen)
