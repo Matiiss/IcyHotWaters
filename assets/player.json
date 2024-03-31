@@ -37,7 +37,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 32 },
     "sourceSize": { "w": 16, "h": 32 },
-    "duration": 150
+    "duration": 100
    },
    "walk_1": {
     "frame": { "x": 16, "y": 32, "w": 16, "h": 32 },
@@ -93,10 +93,26 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 32 },
     "sourceSize": { "w": 16, "h": 32 },
-    "duration": 150
+    "duration": 100
    },
    "jump_0": {
     "frame": { "x": 0, "y": 64, "w": 16, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 32 },
+    "sourceSize": { "w": 16, "h": 32 },
+    "duration": 150
+   },
+   "fall_slow_0": {
+    "frame": { "x": 0, "y": 96, "w": 16, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 32 },
+    "sourceSize": { "w": 16, "h": 32 },
+    "duration": 150
+   },
+   "fall_fast_0": {
+    "frame": { "x": 0, "y": 128, "w": 16, "h": 32 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 32 },
@@ -109,12 +125,14 @@
   "version": "1.x-dev",
   "image": "player.png",
   "format": "RGBA8888",
-  "size": { "w": 128, "h": 96 },
+  "size": { "w": 128, "h": 160 },
   "scale": "1",
   "frameTags": [
    { "name": "idle", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
    { "name": "walk", "from": 4, "to": 11, "direction": "forward", "color": "#000000ff" },
-   { "name": "jump", "from": 12, "to": 12, "direction": "forward", "color": "#000000ff" }
+   { "name": "jump", "from": 12, "to": 12, "direction": "forward", "color": "#000000ff" },
+   { "name": "fall_slow", "from": 13, "to": 13, "direction": "forward", "color": "#000000ff" },
+   { "name": "fall_fast", "from": 14, "to": 14, "direction": "forward", "color": "#000000ff" }
   ],
   "layers": [
    { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }

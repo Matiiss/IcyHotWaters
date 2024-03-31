@@ -4,6 +4,9 @@ import pathlib
 import operator
 
 import pygame
+import pygame._sdl2 as pg_sdl2  # noqa
+
+from . import common
 
 
 class AsepriteSpriteSheet:
@@ -16,11 +19,13 @@ class AsepriteSpriteSheet:
 
         self._data = collections.defaultdict(list)
 
-        spritesheet = pygame.image.load(sheet_path).convert_alpha()
+        # spritesheet = pygame.image.load(sheet_path).convert_alpha()
+        spritesheet = pygame.image.load(sheet_path)
         for name, data in config["frames"].items():
             key, num = name.rsplit("_", maxsplit=1)
             x, y, w, h = data["frame"].values()
             image = spritesheet.subsurface((x, y, w, h))
+            image = pg_sdl2.Texture.from_surface(common.renderer, image)
             self._data[key].append(
                 (int(num), {"image": image, "duration": data["duration"]})
             )

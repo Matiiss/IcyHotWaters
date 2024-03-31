@@ -1,12 +1,19 @@
 import types
 
 import pygame
+import pygame._sdl2 as pg_sdl2  # noqa
 
 from . import stubs
 
-screen: pygame.Surface
+window: pygame.Window
+renderer: pg_sdl2.Renderer
+
+# screen: pygame.Surface  # using _sdl2
+
 dt: float
 events: list[pygame.Event]
+clock: pygame.Clock
+
 _current_state: stubs.State
 
 

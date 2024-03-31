@@ -4,9 +4,11 @@ import json
 import pathlib
 
 import pygame
+import pygame._sdl2 as pg_sdl2  # noqa
 
 from .spritesheet import AsepriteSpriteSheet
 from .level import Level
+from . import common
 
 images: dict = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
@@ -19,7 +21,9 @@ def image_path(path, extension="png"):
 
 
 def load_image(path):
-    return pygame.image.load(image_path(path)).convert_alpha()
+    # return pygame.image.load(image_path(path)).convert_alpha()
+    surf = pygame.image.load(image_path(path))
+    return pg_sdl2.Texture.from_surface(common.renderer, surf)
 
 
 def load_sound(path, extension="mp3"):

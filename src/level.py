@@ -1,7 +1,11 @@
 import json
 import pathlib
+from typing import Iterable
 
 import pygame
+import pygame._sdl2 as pg_sdl2  # noqa
+
+from . import common
 
 MAPS_PATH = pathlib.Path("assets", "maps")
 
@@ -10,13 +14,14 @@ class TileSet:
     tiles: list[pygame.Surface]
 
     def __init__(self, path: str, tile_size: tuple[int, int]):
-        sheet = pygame.image.load(MAPS_PATH / path).convert_alpha()
+        # sheet = pygame.image.load(MAPS_PATH / path).convert_alpha()
+        sheet = pygame.image.load(MAPS_PATH / path)
         width, height = tile_size
         self.tiles = [
             sheet.subsurface((0, y, width, height))
             for y in range(0, sheet.get_height(), height)
         ]
-        self.tile_width, self.tile_height = width, height
+        self.tile_size = self.tile_width, self.tile_height = width, height
 
 
 class Tile:
@@ -26,13 +31,16 @@ class Tile:
         grid_position: tuple[int, int],
         image: pygame.Surface,
     ):
-        self.position = position
+        self.position = pygame.Vector2(position)
         self.grid_position = grid_position
         self.image = image
         self.rect = self.image.get_rect(topleft=position)
+        self.mask = pygame.mask.from_surface(image)
 
 
 class Level:
+    tile_texture_layers: list[pg_sdl2.Texture]
+
     def __init__(self, name: str):
         self.name = name
         with open(MAPS_PATH / name / "sprite.json") as file:
@@ -46,10 +54,12 @@ class Level:
             for ts in self.data["tilesets"]
         ]
 
+        collider_tile_set = self.tile_sets[get_layer_by_name(self.data, "collisions")["tileset"]]
+        self.collider_cell_size = collider_tile_set.tile_size
         self.colliders = get_tiles(
             self.data,
             "collisions",
-            self.tile_sets[get_layer_by_name(self.data, "collisions")["tileset"]],
+            collider_tile_set,
         )
 
         self.background = get_tiles(
@@ -60,8 +70,23 @@ class Level:
 
         self.tile_layers = [self.background, self.colliders]
 
+        map_size = (self.data["width"], self.data["height"])
+        self.tile_texture_layers = [
+            create_big_texture(map_size, self.background.values()),
+            create_big_texture(map_size, self.colliders.values()),
+        ]
 
-def get_tiles(data: dict, layer_name: str, tile_set: TileSet) -> dict[tuple[int, int], Tile]:
+
+def create_big_texture(size: tuple[int, int], tiles: Iterable[Tile]) -> pg_sdl2.Texture:
+    surf = pygame.Surface(size, flags=pygame.SRCALPHA)
+    surf.fblits([(tile.image, tile.rect) for tile in tiles])
+    texture = pg_sdl2.Texture.from_surface(common.renderer, surf)
+    return texture
+
+
+def get_tiles(
+    data: dict, layer_name: str, tile_set: TileSet
+) -> dict[tuple[int, int], Tile]:
     grid_map = {}
     (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name)
     width, height = tile_set.tile_width, tile_set.tile_height
@@ -70,6 +95,10 @@ def get_tiles(data: dict, layer_name: str, tile_set: TileSet) -> dict[tuple[int,
     row_off = y_off // height
 
     for i, tile_idx in enumerate(tiles):
+        # skip empty tiles
+        if tile_idx == 0:
+            continue
+
         row, col = divmod(i, columns)
         grid_x = col_off + col
         grid_y = row_off + row
@@ -95,7 +124,7 @@ def get_tile_map(
 
     x_off, y_off = tile_map["bounds"]["x"], tile_map["bounds"]["y"]
     columns, rows = tile_map["tilemap"]["width"], tile_map["tilemap"]["height"]
-    tiles = tile_map["tiles"]
+    tiles = tile_map["tilemap"]["tiles"]
 
     return (x_off, y_off), (columns, rows), tiles
 

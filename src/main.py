@@ -1,26 +1,35 @@
 import pygame
+import pygame._sdl2 as pg_sdl2  # noqa
 
 from . import common, settings, states, assets
 
 pygame.init()
-common.screen = screen = pygame.display.set_mode(
-    (settings.WIDTH, settings.HEIGHT), flags=settings.DISPLAY_FLAGS
-)
-clock = pygame.Clock()
+# common.screen = screen = pygame.display.set_mode(
+#     (settings.WIDTH, settings.HEIGHT), flags=settings.DISPLAY_FLAGS
+# )
+
+common.window = window = pygame.Window(title=settings.TITLE, size=settings.WINDOW_SIZE)
+common.renderer = renderer = pg_sdl2.Renderer(window)
+renderer.logical_size = settings.SIZE
+common.clock = clock = pygame.Clock()
 
 assets.load_assets()
 
 common.set_current_state(states.GamePlay())
 
-title = pygame.image.load("assets/title_wrapped.png").convert_alpha()
-ice = pygame.image.load("assets/ice_cube.png").convert_alpha()
+title = pygame.image.load("assets/title_wrapped.png")
+title_rect = title.get_rect(midtop=(settings.WIDTH / 2, 20))
+title = pg_sdl2.Texture.from_surface(renderer, title)
+ice = pygame.image.load("assets/ice_cube.png")
 
 running = True
 while running:
     dt = clock.tick(settings.FPS) / 1000
     common.dt = dt = pygame.math.clamp(dt, 0.0005, 0.05)
-    pygame.display.set_caption(f"{settings.TITLE} | FPS: {clock.get_fps():.0f}")
-    screen.fill("darkgreen")
+    window.title = f"{settings.TITLE} | FPS: {clock.get_fps():.0f}"
+
+    renderer.draw_color = (255, 255, 255)
+    renderer.clear()
 
     events = pygame.event.get()
     common.events = events
@@ -39,13 +48,14 @@ while running:
     #     ),
     # )
     #
-    for y in range(settings.HEIGHT // 16):
-        for x in range(settings.WIDTH // 16):
-            screen.blit(ice, (x * 16, y * 16))
+    # for y in range(settings.HEIGHT // 16):
+    #     for x in range(settings.WIDTH // 16):
+    #         screen.blit(ice, (x * 16, y * 16))
 
-    screen.blit(title, title.get_rect(center=(settings.WIDTH // 2, settings.HEIGHT // 2 - 20)))
+    # screen.blit(title, title.get_rect(center=(settings.WIDTH // 2, settings.HEIGHT // 2 - 20)))
+    # title.draw(dstrect=title_rect)
 
     common.get_current_state().update()
-    common.get_current_state().draw(common.screen)
+    common.get_current_state().draw()
 
-    pygame.display.flip()
+    renderer.present()

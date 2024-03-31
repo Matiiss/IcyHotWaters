@@ -1,6 +1,7 @@
 import itertools
 
 import pygame
+import pygame._sdl2 as pg_sdl2  # noqa
 
 from . import spritesheet, enums
 
@@ -23,7 +24,7 @@ class Animation:
         self.state = members["IDLE"]
         self._last_time = 0
 
-    def update(self, state=None) -> pygame.Surface:
+    def update(self, state=None) -> pg_sdl2.Texture:
         # if states is not None:
         #     self.states = states
 
