@@ -25,6 +25,7 @@ class GamePlay:
             state=enums.EntityState.IDLE,
             flip=False,
             is_grounded=False,
+            jump_timer=0,
         )
 
         self.level = level.Level("map_1")
@@ -36,10 +37,15 @@ class GamePlay:
         gravity = 400
 
         self.player.state = enums.EntityState.IDLE
-
+        allow_repeat_jump = True
         for event in common.events:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
+                if event.key == pygame.K_w and self.player.is_grounded:
+                    initial_velocity = calculate_initial_velocity(self.player.jump_height, gravity)
+                    self.player.velocity.y = initial_velocity
+                    self.player.jump_timer = abs(initial_velocity / gravity)
+                    allow_repeat_jump = False
+                elif event.key == pygame.K_a:
                     self.player.flip = True
                 elif event.key == pygame.K_d:
                     self.player.flip = False
@@ -52,10 +58,14 @@ class GamePlay:
             self.player.velocity.x += self.player.walk_speed
             self.player.state = enums.EntityState.WALK
 
-        if keys[pygame.K_w] and self.player.is_grounded:
-            self.player.velocity.y = calculate_initial_velocity(
-                self.player.jump_height, gravity
-            )
+        self.player.jump_timer -= common.dt
+        if self.player.jump_timer <= 0:
+            self.player.jump_timer = 0
+
+        if keys[pygame.K_w] and allow_repeat_jump and self.player.is_grounded and self.player.jump_timer == 0:
+            initial_velocity = calculate_initial_velocity(self.player.jump_height, gravity)
+            self.player.velocity.y = initial_velocity
+            self.player.jump_timer = abs(initial_velocity / gravity)
 
         self.player.velocity.y += gravity * common.dt
         self.player.velocity.y = pygame.math.clamp(self.player.velocity.y, -9999, 700)
@@ -76,8 +86,6 @@ class GamePlay:
 
         self.player.position.xy = self.player.collision_rect.center
         self.player.rect.center = self.player.collision_rect.center
-
-        print(self.player.velocity.y)
 
         self.update_camera()
 
