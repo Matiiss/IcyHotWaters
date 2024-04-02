@@ -1,4 +1,6 @@
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
+
+import pygame
 
 
 class EntityState(Enum):
@@ -7,3 +9,7 @@ class EntityState(Enum):
     JUMP = auto()
     FALL_FAST = auto()
     FALL_SLOW = auto()
+
+
+class ParticleEvent(IntEnum):
+    FURNACE_PARTICLE_SPAWN = pygame.event.custom_type()

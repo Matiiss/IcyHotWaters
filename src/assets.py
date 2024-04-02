@@ -62,6 +62,9 @@ def load_assets():
     images.update(
         {
             "player": AsepriteSpriteSheet(image_path("player")),
+            "ice_cube": load_image("ice_cube"),
+            "ice_cube_invalid": load_image("ice_cube_invalid"),
+            "steam_particle": AsepriteSpriteSheet(image_path("steam_particle"))
             # "tiles": load_tiles(),
         }
     )
@@ -79,16 +82,16 @@ def load_assets():
     #     }
     # )
     # # maps.update({"level_1": Level(level_path("level_1"), load_tiles())})
-    # fonts.update(
-    #     {
-    #         "default": {16: pygame.Font(None, 16)},
-    #         "forward": {
-    #             **load_fonts(
-    #                 "FFFFORWA.TTF", [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32]
-    #             )
-    #         },
-    #         "forward_regular": {
-    #             **load_fonts("fff-forward.regular.ttf", [6, 8, 10, 12, 14, 16, 18])
-    #         },
-    #     }
-    # )
+    fonts.update(
+        {
+            "default": {16: pygame.Font(None, 16)},
+            # "forward": {
+            #     **load_fonts(
+            #         "FFFFORWA.TTF", [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32]
+            #     )
+            # },
+            # "forward_regular": {
+            #     **load_fonts("fff-forward.regular.ttf", [6, 8, 10, 12, 14, 16, 18])
+            # },
+        }
+    )

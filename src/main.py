@@ -28,7 +28,7 @@ while running:
     common.dt = dt = pygame.math.clamp(dt, 0.0005, 0.05)
     window.title = f"{settings.TITLE} | FPS: {clock.get_fps():.0f}"
 
-    renderer.draw_color = (255, 255, 255)
+    renderer.draw_color = (0, 150, 150)
     renderer.clear()
 
     events = pygame.event.get()
