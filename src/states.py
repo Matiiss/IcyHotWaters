@@ -63,7 +63,13 @@ class CombinedDict:
 class GamePlay:
     def __init__(self):
         center = (settings.WIDTH / 2, settings.HEIGHT / 2)
-        pos = (340, 672)
+
+        self.level = level.Level("map_1", 1)
+
+        # pos = (340, 672)
+        pos = self.level.player_position[0] * 16, (self.level.player_position[1] - 1) * 16  # FIXME hardcoded values
+        self.camera = pygame.Vector2(pos) + (0, 16) - settings.SIZE  # FIXME more hardcoded values...
+
         self.player = types.SimpleNamespace(
             position=pygame.Vector2(pos),
             velocity=pygame.Vector2(),
@@ -79,10 +85,6 @@ class GamePlay:
             is_grounded=False,
             jump_timer=0,
         )
-
-        self.level = level.Level("map_1")
-
-        self.camera = pygame.Vector2()
 
         self.extra_colliders = collections.defaultdict(list)
         self.extra_cleared_colliders = collections.defaultdict(list)
@@ -138,12 +140,13 @@ class GamePlay:
                 elif event.key == pygame.K_e:
                     e_just_pressed = True
             elif event.type == pygame.MOUSEWHEEL:
-                c_x, c_y = common.renderer.scale
-                c_x += event.y * 1
-                c_y += event.y * 1
-                c_x = pygame.math.clamp(c_x, 2, 5)
-                c_y = pygame.math.clamp(c_y, 2, 5)
-                common.renderer.scale = (c_x, c_y)
+                x, y = common.renderer.logical_size
+                step_x, step_y = settings.WIDTH // 3, settings.HEIGHT // 3
+                x -= event.y * step_x
+                y -= event.y * step_y
+                x = pygame.math.clamp(x, step_x, settings.WIDTH)
+                y = pygame.math.clamp(y, step_y, settings.HEIGHT)
+                common.renderer.logical_size = (x, y)
             elif event.type == enums.ParticleEvent.FURNACE_PARTICLE_SPAWN:
                 for furnace in self.level.furnaces.values():
                     if not furnace.is_filled:
@@ -384,11 +387,11 @@ class GamePlay:
             return
 
         best_displacement = None
-        displacements = [(0, 0, 0)]  # dist_squared, displacement_x, displacement_y
+        displacements = [(0, 0, 0, 0)]  # dist_squared, penalty, displacement_x, displacement_y
         seen_displacements = {(0, 0)}
 
         while True:
-            _, dis_x, dis_y = heapq.heappop(displacements)
+            _, _, dis_x, dis_y = heapq.heappop(displacements)
             dis_xy = (dis_x, dis_y)
             displaced_rect = rect.move(dis_xy)
 
@@ -396,14 +399,26 @@ class GamePlay:
                 best_displacement = dis_xy
                 break
             else:
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                for dx, dy in [(0, 1), (1, 0), (-1, 0), (0, -1)]:
                     new_dis_xy = new_dis_x, new_dis_y = dis_x + dx, dis_y + dy
                     if new_dis_xy in seen_displacements:
                         continue
 
                     dist_squared = new_dis_x**2 + new_dis_y**2
+                    # give preference to direct upwards movement, this allows to climb slopes
+                    # also allows climbing slopes using the head, at least if going to the right...
+                    if dis_x == 0 and dy == -1:
+                        # print(new_dis_xy)
+                        dist_squared -= 8
+
+                    # gives preference to upwards and downwards movement to combat climbing slopes
+                    # from below
+                    penalty = 0
+                    if dy == 0:
+                        penalty = 1
+
                     seen_displacements.add(new_dis_xy)
-                    heapq.heappush(displacements, (dist_squared, new_dis_x, new_dis_y))
+                    heapq.heappush(displacements, (dist_squared, penalty, new_dis_x, new_dis_y))
 
         if best_displacement is None:
             print("uh oh")
@@ -432,7 +447,7 @@ class GamePlay:
             self.player.is_grounded = self.rect_collides_any(rect.move(0, 1))
 
     def update_camera(self):
-        viewport_size = pygame.Vector2(common.renderer.get_viewport().size)
+        viewport_size = pygame.Vector2(common.renderer.logical_size)
         half_viewport_size = viewport_size / 2
         self.camera = self.camera.lerp(
             self.player.position - half_viewport_size, 5 * common.dt

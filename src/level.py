@@ -181,7 +181,7 @@ class LiftWheel:
 class Level:
     tile_texture_layers: list[pg_sdl2.Texture]
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, frame: int):
         self.name = name
         with open(MAPS_PATH / name / "sprite.json") as file:
             self.data = json.load(file)
@@ -201,20 +201,21 @@ class Level:
             for ts in self.data["tilesets"]
         ]
 
+        self.player_position = list(get_tiles(self.data, "spawn", self.tile_sets[
+            get_layer_by_name(self.data, "spawn")["tileset"]
+        ], frame=frame))[0]
+
         collider_tile_set = self.tile_sets[
             get_layer_by_name(self.data, "collisions")["tileset"]
         ]
         self.collider_cell_size = collider_tile_set.tile_size
-        self.colliders = get_tiles(
-            self.data,
-            "collisions",
-            collider_tile_set,
-        )
+        self.colliders = get_tiles(self.data, "collisions", collider_tile_set, frame)
 
         self.background = get_tiles(
             self.data,
             "background",
             self.tile_sets[get_layer_by_name(self.data, "background")["tileset"]],
+            frame,
         )
 
         self.tile_layers = [self.background, self.colliders]
@@ -232,6 +233,7 @@ class Level:
             self.texture_tile_sets[
                 get_layer_by_name(interactives_layer, freezers)["tileset"]
             ],
+            frame,
         )
 
         furnaces = "furnaces"
@@ -241,6 +243,7 @@ class Level:
             self.texture_tile_sets[
                 get_layer_by_name(interactives_layer, furnaces)["tileset"]
             ],
+            frame,
         )
         for furnace in self.furnaces.values():
             furnace.is_filled = False
@@ -260,6 +263,7 @@ class Level:
             self.texture_tile_sets[
                 get_layer_by_name(lifts_layer, platforms)["tileset"]
             ],
+            frame,
         )
         seen = set()
         current = []
@@ -284,6 +288,7 @@ class Level:
             lifts_layer,
             wheels,
             self.texture_tile_sets[get_layer_by_name(lifts_layer, wheels)["tileset"]],
+            frame,
         )
         seen = set()
         current = []
@@ -307,6 +312,7 @@ class Level:
             lifts_layer,
             joiners,
             self.texture_tile_sets[get_layer_by_name(lifts_layer, joiners)["tileset"]],
+            frame,
         )
         seen = set()
         for x, y in lift_joiner_segments:
@@ -332,19 +338,30 @@ class Level:
             wheel.platform = platform
             wheel.platform_initial_position = platform.position.copy()
             # basically height
-            wheel.platform_min_position = (min(endpoint_1[1], endpoint_2[1]) + 1) * self.collider_cell_size[1]
+            wheel.platform_min_position = (
+                min(tpl[1] for tpl in traversed) + 1
+            ) * self.collider_cell_size[1]
 
 
 def find_end_nodes_from_path_segment(
     start: tuple[int, int], segments: set[tuple[int, int]], came_from=(0, 0)
 ):
+    # this whole thing is super janky
     x, y = start
     found_segments = set()
     all_segments = {start}
+    going_other_direction = False
     i = 0
     for x_dir, y_dir in [(0, -1), (1, 0), (0, 1), (-1, 0)]:
         if (-x_dir, -y_dir) == came_from:
             continue
+
+        if len(found_segments) == 1 and came_from != (0, 0):
+            if not going_other_direction:
+                continue
+            else:
+                going_other_direction = True
+
         new_start = x + x_dir, y + y_dir
         if new_start not in segments:
             continue
@@ -372,10 +389,10 @@ def create_big_texture(size: tuple[int, int], tiles: Iterable[Tile]) -> pg_sdl2.
 
 
 def get_tile_positions(
-    data: dict, layer_name: str, tile_set: TileSet | TextureTileSet
+    data: dict, layer_name: str, tile_set: TileSet | TextureTileSet, frame: int
 ) -> set[tuple[int, int]]:
     grid_positions = set()
-    (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name)
+    (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name, frame)
     width, height = tile_set.tile_width, tile_set.tile_height
 
     col_off = x_off // width
@@ -396,14 +413,16 @@ def get_tile_positions(
 
 
 def get_tiles(
-    data: dict, layer_name: str, tile_set: TileSet
+    data: dict, layer_name: str, tile_set: TileSet, frame: int
 ) -> dict[tuple[int, int], Tile]:
     grid_map = {}
-    (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name)
+    (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name, frame)
     width, height = tile_set.tile_width, tile_set.tile_height
 
     col_off = x_off // width
     row_off = y_off // height
+    # print(layer_name)
+    # print(tiles)
 
     for i, tile_idx in enumerate(tiles):
         # skip empty tiles
@@ -415,7 +434,7 @@ def get_tiles(
         grid_y = row_off + row
         x = x_off + col * width
         y = y_off + row * height
-
+        # print(grid_x, grid_y)
         grid_map[(grid_x, grid_y)] = Tile(
             position=(x, y),
             grid_position=(grid_x, grid_y),
@@ -426,10 +445,10 @@ def get_tiles(
 
 
 def get_texture_tiles(
-    data: dict, layer_name: str, tile_set: TextureTileSet
+    data: dict, layer_name: str, tile_set: TextureTileSet, frame: int
 ) -> dict[tuple[int, int], TextureTile]:
     grid_map = {}
-    (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name)
+    (x_off, y_off), (columns, rows), tiles = get_tile_map(data, layer_name, frame)
     width, height = tile_set.tile_width, tile_set.tile_height
 
     col_off = x_off // width
@@ -456,12 +475,15 @@ def get_texture_tiles(
 
 
 def get_tile_map(
-    data: dict, layer_name: str, frame: int = 0
+    data: dict, layer_name: str, frame: int
 ) -> tuple[tuple[int, int], tuple[int, int], list[int]]:
     layer = get_layer_by_name(data, layer_name)
-    tile_map = layer["cels"][
-        frame
-    ]  # TODO do a linear search over the `cels` array to find the correct frame
+
+    try:
+        tile_map = get_frame(layer, frame)
+    except Exception as e:
+        print(e)
+        return (0, 0), (0, 0), []
 
     x_off, y_off = tile_map["bounds"]["x"], tile_map["bounds"]["y"]
     columns, rows = tile_map["tilemap"]["width"], tile_map["tilemap"]["height"]
@@ -477,5 +499,12 @@ def get_layer_by_name(data: dict, name: str) -> dict:
     raise Exception(f"layer {name!r} not found in layer {data['name']!r}")
 
 
+def get_frame(layer: dict, frame: int) -> dict:
+    for cel in layer["cels"]:
+        if cel["frame"] == frame:
+            return cel
+    raise Exception(f"frame {frame!r} not found in layer {layer['name']!r}, might be empty")
+
+
 if __name__ == "__main__":
-    Level(name="map_1")
+    Level("map_1", 0)
