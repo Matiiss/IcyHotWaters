@@ -52,7 +52,7 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                running = False
+                common.set_current_state(states.MainMenu())
 
     for event in common.events:
         if event.type == MUSIC_ENDED:
