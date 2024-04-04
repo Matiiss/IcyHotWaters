@@ -1,2 +1,2 @@
 from .particles import Particle
-from .particle_manager import ParticleManager
+from .particle_manager import ParticleManager, TextParticleManager

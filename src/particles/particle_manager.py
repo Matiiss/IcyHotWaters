@@ -50,7 +50,9 @@ class ParticleManager:
         for particle in self.particles:
             texture = self.mapping[particle.time]
             img = texture
-            rect = pygame.FRect(0, 0, texture.width, texture.height).move_to(center=particle.pos)
+            rect = pygame.FRect(0, 0, texture.width, texture.height).move_to(
+                center=particle.pos
+            )
             if static:
                 img.draw(dstrect=rect)
             else:
@@ -65,7 +67,7 @@ class ParticleManager:
         delay: int | list[int] = 100,
         alpha: range | list[int] | int = 255,
         color: str = "white",
-        aa: bool = True
+        aa: bool = True,
     ):
         if isinstance(delay, list):
             assert count == len(delay)
@@ -89,3 +91,44 @@ class ParticleManager:
             sheet.append(dct)
 
         return cls(sheet)
+
+
+class TextParticleManager:
+    def __init__(
+        self,
+        font: pygame.Font,
+        count=1,
+        delay=100,
+        alpha=255,
+        color: str = "black",
+        aa: bool = True,
+    ):
+        self.font = font
+        self.count = count
+        self.delay = delay
+        self.alpha = alpha
+        self.color = color
+        self.aa = aa
+        self.particle_managers = {}
+
+    def spawn(self, text: str, pos, velocity, count=1, max_time=None):
+        if text not in self.particle_managers:
+            manager = ParticleManager.from_string(
+                font=self.font,
+                text=text,
+                count=self.count,
+                delay=self.delay,
+                alpha=self.alpha,
+                color=self.color,
+                aa=self.aa,
+            )
+            self.particle_managers[text] = manager
+        self.particle_managers[text].spawn(pos, velocity, count, max_time=max_time)
+
+    def update(self):
+        for manager in self.particle_managers.values():
+            manager.update()
+
+    def render(self, camera: pygame.Vector2, target=None, static=False):
+        for manager in self.particle_managers.values():
+            manager.render(camera, target, static)

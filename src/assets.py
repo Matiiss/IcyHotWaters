@@ -7,8 +7,7 @@ import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
 
 from .spritesheet import AsepriteSpriteSheet
-from .level import Level
-from . import common
+from . import common, level
 
 images: dict = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
@@ -31,9 +30,7 @@ def load_sound(path, extension="mp3"):
 
 
 def load_fonts(path, sizes):
-    return {
-        size: pygame.Font(os.path.join("assets/fonts", path), size) for size in sizes
-    }
+    return {size: pygame.Font(os.path.join("assets", path), size) for size in sizes}
 
 
 @functools.cache
@@ -58,40 +55,74 @@ def set_sound_volume(value):
         sound.set_volume(value)
 
 
+def stop_all_sounds():
+    for sound in sfx.values():
+        sound.stop()
+
+
 def load_assets():
     images.update(
         {
             "player": AsepriteSpriteSheet(image_path("player")),
             "ice_cube": load_image("ice_cube"),
             "ice_cube_invalid": load_image("ice_cube_invalid"),
-            "steam_particle": AsepriteSpriteSheet(image_path("steam_particle"))
+            "ice_cube_icon": level.TextureTile(
+                (0, 0), (0, 0), load_image("ice_cube_icon")
+            ),
+            "steam_particle": AsepriteSpriteSheet(image_path("steam_particle")),
+            "rope": load_image("rope"),
+            "freezer_loading_bar": AsepriteSpriteSheet(
+                image_path("freezer_loading_bar")
+            ),
+            "fire_particles": AsepriteSpriteSheet(image_path("fire_particles")),
+            "ice_particles": AsepriteSpriteSheet(image_path("ice_particles")),
+            "dust_particles": AsepriteSpriteSheet(image_path("dust_particles")),
+            "item_frame": load_image("item_frame"),
+            "item_frame_selected": load_image("item_frame_selected"),
             # "tiles": load_tiles(),
         }
     )
-    # sfx.update(
-    #     {
-    #         "crunch": load_sound("crunch"),
-    #         "sloop": load_sound("sloop"),
-    #         "nope": load_sound("nope"),
-    #         "paper": load_sound("paper"),
-    #         "humm": load_sound("humm"),
-    #         "plop": load_sound("plop"),
-    #         "wood": load_sound("wood"),
-    #         "wood_1": load_sound("wood_1"),
-    #         "wood_2": load_sound("wood_2"),
-    #     }
-    # )
+    sfx.update(
+        {
+            "pop": load_sound("pop"),
+            "ding": load_sound("ding"),
+            "humm": load_sound("humm"),
+            "splash": load_sound("splash"),
+            "no": load_sound("no"),
+            "knock": load_sound("knock"),
+        }
+    )
     # # maps.update({"level_1": Level(level_path("level_1"), load_tiles())})
     fonts.update(
         {
-            "default": {16: pygame.Font(None, 16)},
-            # "forward": {
-            #     **load_fonts(
-            #         "FFFFORWA.TTF", [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32]
-            #     )
-            # },
-            # "forward_regular": {
-            #     **load_fonts("fff-forward.regular.ttf", [6, 8, 10, 12, 14, 16, 18])
-            # },
+            "default": {
+                16: pygame.Font(None, 16),
+                12: pygame.Font(None, 12),
+                10: pygame.Font(None, 10),
+            },
+            "pixelify_regular": {
+                **load_fonts(
+                    "Pixelify_Sans/static/PixelifySans-Regular.ttf",
+                    [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32],
+                )
+            },
+            "pixelify_bold": {
+                **load_fonts(
+                    "Pixelify_Sans/static/PixelifySans-Bold.ttf",
+                    [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32],
+                )
+            },
+            "pixelify_medium": {
+                **load_fonts(
+                    "Pixelify_Sans/static/PixelifySans-Medium.ttf",
+                    [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32],
+                )
+            },
+            "pixelify_semibold": {
+                **load_fonts(
+                    "Pixelify_Sans/static/PixelifySans-SemiBold.ttf",
+                    [4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32],
+                )
+            },
         }
     )

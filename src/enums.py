@@ -12,4 +12,11 @@ class EntityState(Enum):
 
 
 class ParticleEvent(IntEnum):
-    FURNACE_PARTICLE_SPAWN = pygame.event.custom_type()
+    STEAM_PARTICLE_SPAWN = pygame.event.custom_type()
+    FURNACE_FIRE_PARTICLE_SPAWN = pygame.event.custom_type()
+    FREEZER_ICE_PARTICLE_SPAWN = pygame.event.custom_type()
+    DUST_PARTICLE_SPAWN = pygame.event.custom_type()
+
+
+class LoadingState(Enum):
+    THINGY = auto()

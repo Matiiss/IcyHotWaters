@@ -6,7 +6,7 @@ from typing import Iterable
 import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
 
-from . import common
+from . import common, animation, assets
 
 MAPS_PATH = pathlib.Path("assets", "maps")
 
@@ -66,10 +66,88 @@ class TextureTile:
         self.position = pygame.Vector2(position)
         self.grid_position = grid_position
         self.image = texture
-        self.rect = pygame.Rect(*position, texture.width, texture.height)
+        self.rect = pygame.FRect(*position, texture.width, texture.height)
         self.mask = pygame.mask.Mask(
             self.rect.size, fill=True
         )  # TODO make it use the actual mask
+
+
+class WaterTile:
+    def __init__(
+        self,
+        position: tuple[int, int],
+        grid_position: tuple[int, int],
+        texture: pg_sdl2.Texture,
+        idx: int,
+    ):
+        self.idx = idx
+        self.position = pygame.Vector2(position)
+        self.grid_position = grid_position
+        self.image = texture
+        self.rect = pygame.FRect(*position, texture.width, texture.height)
+        self.mask = pygame.mask.Mask(
+            self.rect.size, fill=True
+        )  # TODO make it use the actual mask
+
+
+class BigFreezer:
+    # don't remove this from here, an isinstance check might depend on it
+    @dataclasses.dataclass
+    class Collider:
+        position: pygame.Vector2
+        rect: pygame.FRect
+        mask: pygame.mask.Mask
+
+    def __init__(
+        self,
+        position: tuple[int, int],
+        grid_position: tuple[int, int],
+        segments: list[TextureTile],
+    ):
+        self.position = pygame.Vector2(position)
+        self.grid_position = grid_position
+
+        self.texture = pg_sdl2.Texture(
+            common.renderer, (32, 32), target=True
+        )  # FIXME don't use hardcoded values...
+        self.texture.blend_mode = pygame.BLENDMODE_BLEND
+
+        current_target = common.renderer.target
+        common.renderer.target = self.texture
+        for i, segment in enumerate(segments):
+            y, x = divmod(i, 2)  # hardcoded again :sobbing:
+            x *= 16  # yeah...
+            y *= 16  # mhm
+            segment.image.draw(dstrect=(x, y))
+        common.renderer.target = current_target
+
+        self.mask = pygame.mask.Mask(self.collider_rect.size, fill=True)
+
+        self.loading_bar_animation = animation.LoadingBarAnimation(
+            assets.images["freezer_loading_bar"], cycle=False
+        )
+        self.loading_bar_image = None
+        self.loading_bar_rect = pygame.Rect(0, 0, 32, 16).move_to(
+            midbottom=self.rect.midtop
+        )
+        self.loading_bar_position = pygame.Vector2(self.loading_bar_rect.topleft)
+        self.bucket = None
+
+    @property
+    def rect(self) -> pygame.FRect:
+        return pygame.FRect(*self.position, self.texture.width, self.texture.height)
+
+    @property
+    def collider_rect(self) -> pygame.FRect:
+        return pygame.FRect(0, 0, 32, 32).move_to(midbottom=self.rect.midbottom)
+
+    @property
+    def collider(self):
+        return type(self).Collider(
+            position=pygame.Vector2(self.collider_rect.topleft),
+            rect=self.collider_rect,
+            mask=self.mask,
+        )
 
 
 class LiftPlatform:
@@ -201,9 +279,14 @@ class Level:
             for ts in self.data["tilesets"]
         ]
 
-        self.player_position = list(get_tiles(self.data, "spawn", self.tile_sets[
-            get_layer_by_name(self.data, "spawn")["tileset"]
-        ], frame=frame))[0]
+        self.player_position = list(
+            get_tiles(
+                self.data,
+                "spawn",
+                self.tile_sets[get_layer_by_name(self.data, "spawn")["tileset"]],
+                frame=frame,
+            )
+        )[0]
 
         collider_tile_set = self.tile_sets[
             get_layer_by_name(self.data, "collisions")["tileset"]
@@ -218,12 +301,45 @@ class Level:
             frame,
         )
 
-        self.tile_layers = [self.background, self.colliders]
+        self.background_2 = get_tiles(
+            self.data,
+            "background_2",
+            self.tile_sets[get_layer_by_name(self.data, "background_2")["tileset"]],
+            frame,
+        )
+
+        self.water_tiles = get_tiles(
+            self.data,
+            "water",
+            self.tile_sets[get_layer_by_name(self.data, "water")["tileset"]],
+            frame,
+        )
+
+        self.spikes = get_tiles(
+            self.data,
+            "spikes",
+            self.tile_sets[get_layer_by_name(self.data, "spikes")["tileset"]],
+            frame,
+        )
+
+        self.tile_layers = [self.background_2, self.background, self.colliders, self.spikes]
         self.map_size = map_size = (self.data["width"], self.data["height"])
         self.tile_texture_layers = [
+            create_big_texture(map_size, self.background_2.values()),
             create_big_texture(map_size, self.background.values()),
             create_big_texture(map_size, self.colliders.values()),
+            create_big_texture(map_size, self.spikes.values()),
         ]
+
+        self.water_texture = create_big_texture(map_size, self.water_tiles.values())
+        self.water_texture.blend_mode = pygame.BLEND_RGBA_MULT
+        self.water = get_tile_positions(
+            self.data,
+            "water",
+            self.tile_sets[get_layer_by_name(self.data, "water")["tileset"]],
+            frame,
+        )
+        self.spikes = {grid_pos: [tile] for grid_pos, tile in self.spikes.items()}
 
         interactives_layer = get_layer_by_name(self.data, "interactives")
         freezers = "freezers"
@@ -235,6 +351,28 @@ class Level:
             ],
             frame,
         )
+
+        self.big_freezers = {}
+        seen = set()
+        current = []
+        for (x, y), tile in self.freezers.items():
+            if (x, y) in seen:
+                continue
+            for x_off, y_off in [(0, 0), (1, 0), (0, 1), (1, 1)]:
+                new_x, new_y = x + x_off, y + y_off
+                seen.add((new_x, new_y))
+
+                tile = self.freezers[(new_x, new_y)]
+                current.append(tile)
+            big_freezer = BigFreezer(
+                (x * 16, y * 16), (x, y), current
+            )  # FIXME don't use hardcoded tile size values...
+            self.big_freezers[(x, y)] = big_freezer
+            current.clear()
+
+        for freezer in self.big_freezers.values():
+            freezer.is_freezing_water = False
+            freezer.spawned_prompt = False
 
         furnaces = "furnaces"
         self.furnaces = get_texture_tiles(
@@ -248,8 +386,33 @@ class Level:
         for furnace in self.furnaces.values():
             furnace.is_filled = False
             furnace.spawned_prompt = False
+            furnace.bucket = None
 
-        self.interactives = {freezers: self.freezers, furnaces: self.furnaces}
+        filled_furnaces = "filled_furnaces"
+        self.filled_furnaces = get_texture_tiles(
+            interactives_layer,
+            filled_furnaces,
+            self.texture_tile_sets[
+                get_layer_by_name(interactives_layer, filled_furnaces)["tileset"]
+            ],
+            frame,
+        )
+
+        buckets = "buckets"
+        self.buckets = get_texture_tiles(
+            interactives_layer,
+            buckets,
+            self.texture_tile_sets[
+                get_layer_by_name(interactives_layer, buckets)["tileset"]
+            ],
+            frame,
+        )
+
+        self.interactives = {
+            freezers: self.freezers,
+            furnaces: self.furnaces,
+            buckets: self.buckets,
+        }
         self.interactives_grid_positions = set()
         for interactive in self.interactives.values():
             self.interactives_grid_positions |= interactive.keys()
@@ -435,11 +598,19 @@ def get_tiles(
         x = x_off + col * width
         y = y_off + row * height
         # print(grid_x, grid_y)
+        # if layer_name != "water":
         grid_map[(grid_x, grid_y)] = Tile(
             position=(x, y),
             grid_position=(grid_x, grid_y),
             image=tile_set.tiles[tile_idx],
         )
+        # else:
+        #     grid_map[(grid_x, grid_y)] = WaterTile(
+        #         position=(x, y),
+        #         grid_position=(grid_x, grid_y),
+        #         image=tile_set.tiles[tile_idx],
+        #         idx=tile_idx,
+        #     )
 
     return grid_map
 
@@ -503,7 +674,9 @@ def get_frame(layer: dict, frame: int) -> dict:
     for cel in layer["cels"]:
         if cel["frame"] == frame:
             return cel
-    raise Exception(f"frame {frame!r} not found in layer {layer['name']!r}, might be empty")
+    raise Exception(
+        f"frame {frame!r} not found in layer {layer['name']!r}, might be empty"
+    )
 
 
 if __name__ == "__main__":

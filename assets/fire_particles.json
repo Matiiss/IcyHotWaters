@@ -1,0 +1,82 @@
+{ "frames": {
+   "_0": {
+    "frame": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 50
+   },
+   "_1": {
+    "frame": { "x": 1, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 50
+   },
+   "_2": {
+    "frame": { "x": 2, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 50
+   },
+   "_3": {
+    "frame": { "x": 3, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 50
+   },
+   "_4": {
+    "frame": { "x": 4, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 150
+   },
+   "_5": {
+    "frame": { "x": 5, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 150
+   },
+   "_6": {
+    "frame": { "x": 6, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 150
+   },
+   "_7": {
+    "frame": { "x": 7, "y": 0, "w": 1, "h": 1 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+    "sourceSize": { "w": 1, "h": 1 },
+    "duration": 150
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.x-dev",
+  "image": "fire_particles.png",
+  "format": "RGBA8888",
+  "size": { "w": 8, "h": 1 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}
