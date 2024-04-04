@@ -16,6 +16,7 @@ class ParticleEvent(IntEnum):
     FURNACE_FIRE_PARTICLE_SPAWN = pygame.event.custom_type()
     FREEZER_ICE_PARTICLE_SPAWN = pygame.event.custom_type()
     DUST_PARTICLE_SPAWN = pygame.event.custom_type()
+    MAGIC_PARTICLE_SPAWN = pygame.event.custom_type()
 
 
 class LoadingState(Enum):

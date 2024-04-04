@@ -1,7 +1,7 @@
 import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
 
-from . import common, settings, states, assets
+from . import common, settings, assets, states
 
 pygame.init()
 # common.screen = screen = pygame.display.set_mode(
@@ -15,12 +15,13 @@ common.clock = clock = pygame.Clock()
 
 assets.load_assets()
 
-common.set_current_state(states.GamePlay())
+# common.set_current_state(states.GamePlay())
+common.set_current_state(states.MainMenu())
 
-title = pygame.image.load("assets/title_wrapped.png")
-title_rect = title.get_rect(midtop=(settings.WIDTH / 2, 20))
-title = pg_sdl2.Texture.from_surface(renderer, title)
-ice = pygame.image.load("assets/ice_cube.png")
+# title = pygame.image.load("assets/title_wrapped.png")
+# title_rect = title.get_rect(midtop=(settings.WIDTH / 2, 20))
+# title = pg_sdl2.Texture.from_surface(renderer, title)
+# ice = pygame.image.load("assets/ice_cube.png")
 
 running = True
 while running:
@@ -30,8 +31,6 @@ while running:
 
     renderer.draw_color = (0, 0, 0)
     renderer.clear()
-    renderer.draw_color = (0, 150, 150)
-    renderer.fill_rect((0, 0, *renderer.logical_size))
 
     events = pygame.event.get()
     common.events = events

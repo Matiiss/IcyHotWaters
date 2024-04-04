@@ -25,6 +25,10 @@ def load_image(path):
     return pg_sdl2.Texture.from_surface(common.renderer, surf)
 
 
+def load_image_as_surface(path):
+    return pygame.image.load(image_path(path))
+
+
 def load_sound(path, extension="mp3"):
     return pygame.mixer.Sound(os.path.join("assets/sfx", f"{path}.{extension}"))
 
@@ -63,6 +67,7 @@ def stop_all_sounds():
 def load_assets():
     images.update(
         {
+            "title": load_image("title_wrapped"),
             "player": AsepriteSpriteSheet(image_path("player")),
             "ice_cube": load_image("ice_cube"),
             "ice_cube_invalid": load_image("ice_cube_invalid"),
@@ -77,8 +82,19 @@ def load_assets():
             "fire_particles": AsepriteSpriteSheet(image_path("fire_particles")),
             "ice_particles": AsepriteSpriteSheet(image_path("ice_particles")),
             "dust_particles": AsepriteSpriteSheet(image_path("dust_particles")),
+            "magic_particles": AsepriteSpriteSheet(image_path("magic_particles")),
             "item_frame": load_image("item_frame"),
             "item_frame_selected": load_image("item_frame_selected"),
+            "water_top": load_image("water_top"),
+            "water_body": load_image("water_body"),
+            "button": load_image("button"),
+            "button_surf": load_image_as_surface("button"),
+            "button_pressed_surf": load_image_as_surface("button_pressed"),
+            "button_pressed_blue_surf": load_image_as_surface("button_pressed_blue"),
+            "button_pressed_green_surf": load_image_as_surface("button_pressed_green"),
+            "button_pressed_yellow_surf": load_image_as_surface("button_pressed_yellow"),
+            "selector_arrow": load_image("selector_arrow"),
+            "door_open": load_image("door_open"),
             # "tiles": load_tiles(),
         }
     )
