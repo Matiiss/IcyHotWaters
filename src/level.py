@@ -595,7 +595,7 @@ class Level:
         for x, y in lift_joiner_segments:
             if (x, y) in seen:
                 continue
-            print(x, y)
+            # print(x, y)
             (endpoint_1, endpoint_2), traversed = find_end_nodes_from_path_segment(
                 (x, y), lift_joiner_segments
             )
@@ -951,8 +951,8 @@ def get_tile_map(
 
     try:
         tile_map = get_frame(layer, frame)
-    except Exception as e:
-        print(e)
+    except KeyError:
+        # print(e)
         return (0, 0), (0, 0), []
 
     x_off, y_off = tile_map["bounds"]["x"], tile_map["bounds"]["y"]
