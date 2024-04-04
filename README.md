@@ -1,5 +1,7 @@
 # Icy Hot Waters
 
+## Work Heavily In Progress, however, development is paused during the ratings period of the jam this was originally made for.
+
 ## Launching the game using CLI
 After going through the entire process, 
 subsequent launches are a simple `python icy_hot_waters.py` 
