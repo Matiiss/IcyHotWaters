@@ -5,6 +5,10 @@ After going through the entire process,
 subsequent launches are a simple `python icy_hot_waters.py` 
 from the `IcyHotWaters` directory.
 
+It's important to install the requirements with the specified `pygame-ce` version `2.4.1`
+as this project uses API that might be deprecated in later releases and may not exist
+yet in earlier ones.
+
 ### On Windows
 ```
 git clone https://github.com/Matiiss/IcyHotWaters
