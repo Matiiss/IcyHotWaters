@@ -1,3 +1,5 @@
+import itertools
+
 import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
 
@@ -23,6 +25,17 @@ common.set_current_state(states.MainMenu())
 # title = pg_sdl2.Texture.from_surface(renderer, title)
 # ice = pygame.image.load("assets/ice_cube.png")
 
+MUSIC_ENDED = pygame.event.custom_type()
+music_cycle = itertools.cycle([f"assets/music/track_{i}.mp3" for i in range(1, 5 + 1)])
+pygame.mixer.music.set_endevent(MUSIC_ENDED)
+pygame.mixer.music.load(next(music_cycle))
+pygame.mixer.music.queue(next(music_cycle))
+pygame.mixer.music.play()
+
+pygame.mixer.music.set_volume(0.1)
+
+# prev_sfx_volume = common.sfx_volume
+
 running = True
 while running:
     dt = clock.tick(settings.FPS) / 1000
@@ -40,6 +53,15 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
+
+    for event in common.events:
+        if event.type == MUSIC_ENDED:
+            pygame.mixer.music.queue(next(music_cycle))
+
+    # pygame.mixer.music.set_volume(common.music_volume)
+    # if prev_sfx_volume != common.sfx_volume:
+    #     assets.set_sound_volume(common.sfx_volume)
+    #     prev_sfx_volume = common.sfx_volume
 
     # pygame.draw.rect(
     #     screen,

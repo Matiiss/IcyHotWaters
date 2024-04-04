@@ -238,7 +238,7 @@ class LiftWheel:
         self.angle = 0
         self.angular_velocity = 0
         self.angular_terminal_velocity = 180
-        self.angular_acceleration = 100
+        self.angular_acceleration = 80
         self.drag = -40
 
     @property
@@ -379,14 +379,14 @@ class Level:
             for ts in self.data["tilesets"]
         ]
 
-        self.player_position = list(
-            get_tiles(
-                self.data,
-                "spawn",
-                self.tile_sets[get_layer_by_name(self.data, "spawn")["tileset"]],
-                frame=frame,
-            )
-        )[0]
+        self.player_position = get_tiles(
+            self.data,
+            "spawn",
+            self.tile_sets[get_layer_by_name(self.data, "spawn")["tileset"]],
+            frame=frame,
+        )
+        assert len(self.player_position) == 1
+        self.player_position = list(self.player_position)[0]
 
         collider_tile_set = self.tile_sets[
             get_layer_by_name(self.data, "collisions")["tileset"]
@@ -408,6 +408,13 @@ class Level:
             frame,
         )
 
+        self.background_3 = get_tiles(
+            self.data,
+            "background_3",
+            self.tile_sets[get_layer_by_name(self.data, "background_3")["tileset"]],
+            frame,
+        )
+
         self.water_tiles = get_tiles(
             self.data,
             "water",
@@ -423,6 +430,7 @@ class Level:
         )
 
         self.tile_layers = [
+            self.background_3,
             self.background_2,
             self.background,
             self.colliders,
@@ -430,6 +438,7 @@ class Level:
         ]
         self.map_size = map_size = (self.data["width"], self.data["height"])
         self.tile_texture_layers = [
+            create_big_texture(map_size, self.background_3.values()),
             create_big_texture(map_size, self.background_2.values()),
             create_big_texture(map_size, self.background.values()),
             create_big_texture(map_size, self.colliders.values()),
@@ -586,6 +595,7 @@ class Level:
         for x, y in lift_joiner_segments:
             if (x, y) in seen:
                 continue
+            print(x, y)
             (endpoint_1, endpoint_2), traversed = find_end_nodes_from_path_segment(
                 (x, y), lift_joiner_segments
             )
@@ -725,7 +735,9 @@ class Level:
                     )
                 door.teleport = teleport
 
-        for joiner in ["door_key_joiners_1"]:
+        assert all(hasattr(door, "teleport") for door in self.doors.values())
+
+        for joiner in ["door_key_joiners_1", "door_key_joiners_2"]:
             door_key_joiner_segments = get_tile_positions(
                 transport_layer,
                 joiner,
@@ -756,6 +768,11 @@ class Level:
                         "the door and the key"
                     )
                 door.key = key
+
+        assert all(
+            True if hasattr(door, "key") else [print(door.grid_position), False][-1]
+            for door in self.doors.values()
+        )
 
         self.endpoint = get_texture_tiles(
             self.data,
@@ -818,7 +835,7 @@ def find_end_nodes_from_path_segment(
         found_segments.add(start)
     elif i == 1 and came_from == (0, 0):
         found_segments.add(start)
-
+    # print(found_segments)
     return found_segments, all_segments
 
 
@@ -877,11 +894,15 @@ def get_tiles(
         y = y_off + row * height
         # print(grid_x, grid_y)
         # if layer_name != "water":
-        grid_map[(grid_x, grid_y)] = Tile(
-            position=(x, y),
-            grid_position=(grid_x, grid_y),
-            image=tile_set.tiles[tile_idx],
-        )
+
+        try:
+            grid_map[(grid_x, grid_y)] = Tile(
+                position=(x, y),
+                grid_position=(grid_x, grid_y),
+                image=tile_set.tiles[tile_idx],
+            )
+        except IndexError as e:
+            print(e, (grid_x, grid_y), layer_name)
         # else:
         #     grid_map[(grid_x, grid_y)] = WaterTile(
         #         position=(x, y),
@@ -945,7 +966,10 @@ def get_layer_by_name(data: dict, name: str) -> dict:
     for layer in data["layers"]:
         if layer["name"] == name:
             return layer
-    raise Exception(f"layer {name!r} not found in layer {data['name']!r}")
+    try:
+        raise Exception(f"layer {name!r} not found in layer {data['name']!r}")
+    except KeyError:
+        return {}
 
 
 def get_frame(layer: dict, frame: int) -> dict:

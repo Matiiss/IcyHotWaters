@@ -78,9 +78,11 @@ class UIManager:
         common.renderer.target = target
 
         for widget in self.widgets:
+            widget.image.alpha = 150
             widget.image.draw(dstrect=widget.rect)
 
         if self.selector_arrow.shown:
+            self.selector_arrow.image.alpha = 150
             self.selector_arrow.image.draw(dstrect=self.selector_arrow.rect)
 
         common.renderer.target = current_target

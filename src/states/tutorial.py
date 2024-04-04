@@ -9,7 +9,7 @@ import functools
 import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
 
-from src import player, settings, common, enums, animation, assets, level, particles
+from src import player, settings, common, enums, animation, assets, level, particles, states
 
 
 def calculate_initial_velocity(jump_height: float, gravity: float) -> float:
@@ -77,7 +77,7 @@ class Tutorial:
     def __init__(self):
         center = (settings.WIDTH / 2, settings.HEIGHT / 2)
 
-        self.level = level.Level("map_1", 3)
+        self.level = level.Level("map_1", 0)
 
         # pos = (340, 672)
         pos = (
@@ -125,6 +125,7 @@ class Tutorial:
         pygame.time.set_timer(enums.ParticleEvent.FURNACE_FIRE_PARTICLE_SPAWN, 150)
         pygame.time.set_timer(enums.ParticleEvent.FREEZER_ICE_PARTICLE_SPAWN, 150)
         pygame.time.set_timer(enums.ParticleEvent.DUST_PARTICLE_SPAWN, 150)
+        pygame.time.set_timer(enums.ParticleEvent.MAGIC_PARTICLE_SPAWN, 150)
 
         fade_in_alpha_range = range(5, 255 + 1, 25)
         fade_out_alpha_range = range(255, 5 - 1, -25)
@@ -144,12 +145,16 @@ class Tutorial:
         self.fire_particles = particles.ParticleManager(assets.images["fire_particles"])
         self.ice_particles = particles.ParticleManager(assets.images["ice_particles"])
         self.dust_particles = particles.ParticleManager(assets.images["dust_particles"])
+        self.magic_particles = particles.ParticleManager(
+            assets.images["magic_particles"]
+        )
 
         self.particle_managers = [
             self.dust_particles,
             self.furnace_particles,
             self.fire_particles,
             self.ice_particles,
+            self.magic_particles,
             self.text_particle_manager,
         ]
 
@@ -161,11 +166,11 @@ class Tutorial:
         assets.images["water_top"].blend_mode = pygame.BLEND_RGBA_MULT
         assets.images["water_body"].blend_mode = pygame.BLEND_RGBA_MULT
 
-        self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
-        self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
-        self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
-
-        self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
+        # self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
+        # self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
+        # self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
+        #
+        # self.player.inventory["ice_cubes"].append(assets.images["ice_cube_icon"])
 
     def update(self) -> None:
         # yikes
@@ -328,6 +333,20 @@ class Tutorial:
                                 / wheel.angular_terminal_velocity
                                 * 10,
                             )
+            elif event.type == enums.ParticleEvent.MAGIC_PARTICLE_SPAWN:
+                for teleport in self.level.teleports.values():
+                    for _ in range(random.randint(0, 2)):
+                        position = (
+                            teleport.rect.centerx + random.randint(-1, 1),
+                            int(teleport.rect.top),
+                        )
+                        direction = pygame.Vector2(1, 0).rotate(
+                            random.randint(-180, -0)
+                        )
+
+                        self.magic_particles.spawn(
+                            position, direction * random.randint(4, 7)
+                        )
 
         self.player.velocity.x = 0
         if keys[pygame.K_a]:
@@ -380,6 +399,38 @@ class Tutorial:
             for position in self.get_colliding_cells(platform.collider_rect):
                 self.extra_cleared_colliders[position].append(platform.collider)
 
+        for door_grid_pos, door in self.level.doors.items():
+            if collide_circle(
+                pygame.Vector2(door.rect.center), 16, self.player.position, 10
+            ):
+                if not door.spawned_prompt:
+                    self.text_particle_manager.spawn(
+                        "PRESS E",
+                        pygame.Vector2(door.rect.midtop) + pygame.Vector2(0, -10),
+                        pygame.Vector2(0, -10),
+                    )
+                door.spawned_prompt = True
+                if e_just_pressed:
+                    if door.is_locked:
+                        if door.key in self.player.inventory["keys"]:
+                            self.player.inventory["keys"].remove(door.key)
+                            door.is_locked = False
+                            door.texture = assets.images["door_open"]
+                        else:
+                            self.text_particle_manager.spawn(
+                                "NO MATCHING KEY",
+                                pygame.Vector2(door.rect.midtop)
+                                + pygame.Vector2(0, -10),
+                                pygame.Vector2(0, -10),
+                            )
+                    else:
+                        self.player.collision_rect.centerx = door.teleport.rect.centerx
+                        self.player.collision_rect.centery = door.teleport.rect.top - 10
+            else:
+                door.spawned_prompt = False
+            if door.is_locked:
+                self.extra_cleared_colliders[door_grid_pos].append(door.collider)
+
         self.handle_collisions()
         if self.mask_collides_any_with_colliders(
             self.level.spikes, self.player.collision_rect, self.player.mask
@@ -393,10 +444,15 @@ class Tutorial:
 
         self.player.position.xy = self.player.collision_rect.center
         self.player.rect.center = self.player.collision_rect.center
+        if (
+            not pygame.Rect(0, 0, *self.level.map_size)
+            .inflate(400, 400)
+            .contains(self.player.rect)
+        ):
+            self.player.alive = False
 
         mouse_pos = (
-            pygame.Vector2(pygame.mouse.get_pos()).elementwise()
-            / common.renderer.scale  # noqa
+            pygame.Vector2(pygame.mouse.get_pos()).elementwise() / common.renderer.scale
         )
         mouse_world_pos = self.camera + mouse_pos
         m_gx, m_gy = mouse_grid_pos = (
@@ -560,6 +616,11 @@ class Tutorial:
                         for _ in range(len(pool.levels[-pool.filled_levels])):
                             self.player.inventory["buckets"].pop()
 
+        if self.mask_collides_any_with_colliders(
+            self.level.endpoint, self.player.rect, self.player.mask
+        ):
+            common.set_current_state(states.MainMenu())
+
         for furnace in self.level.furnaces.values():
             if collide_circle(
                 pygame.Vector2(furnace.rect.center), 10, self.player.position, 10
@@ -597,14 +658,14 @@ class Tutorial:
             )
             wheel.angle += wheel.angular_velocity * common.dt
             wheel.platform.position.y += (
-                -5
+                -15
                 * wheel.angular_velocity
                 / wheel.angular_terminal_velocity
                 * common.dt
             )
             if wheel.angular_velocity == 0:
                 wheel.platform.position = wheel.platform.position.move_towards(
-                    wheel.platform_initial_position, 5 * common.dt
+                    wheel.platform_initial_position, 10 * common.dt
                 )
             grid_x, grid_y = (
                 pygame.Vector2(wheel.platform.collider_rect.topleft).elementwise()
@@ -643,6 +704,23 @@ class Tutorial:
                 assets.sfx["pop"].play()
         for pos in to_remove:
             self.level.buckets.pop(pos)
+
+        to_remove = []  # because couldn't care less
+        for pos, key in self.level.keys.items():
+            key.rect.top = (
+                key.position.y
+                - 2
+                - math.sin((random_ahh_time + (key.position.x % 150) * 1000) / 1000 * 2)
+                * 4
+            )
+            if collide_circle(
+                key.position + (8, 8), 8, self.player.position, 8
+            ):  # hardcoded values once again...
+                self.player.inventory["keys"].append(key)
+                to_remove.append(pos)
+                assets.sfx["pop"].play()
+        for pos in to_remove:
+            self.level.keys.pop(pos)
 
         for freezer in self.level.big_freezers.values():
             if collide_circle(
@@ -886,6 +964,11 @@ class Tutorial:
                 tile = self.level.filled_furnaces[grid_pos]
                 tile.image.draw(dstrect=tile.rect.topleft - self.camera)
 
+        for door in self.level.doors.values():
+            door.texture.draw(dstrect=door.rect.topleft - self.camera)
+        for key in self.level.keys.values():
+            key.image.draw(dstrect=key.rect.topleft - self.camera)
+
         for platform in self.level.lift_platforms.values():
             platform.texture.draw(dstrect=platform.rect.topleft - self.camera)
         for wheel in self.level.lift_wheels.values():
@@ -936,6 +1019,9 @@ class Tutorial:
             for texture_tile in tiles:
                 texture_tile.image.draw(dstrect=texture_tile.rect.topleft - self.camera)
 
+        for tile in self.level.teleports.values():
+            tile.image.draw(dstrect=tile.rect.topleft - self.camera)
+
         for texture_tile in self.extra_cleared_decorations.values():
             texture_tile.image.draw(dstrect=texture_tile.rect.topleft - self.camera)
 
@@ -955,6 +1041,9 @@ class Tutorial:
         for particle_manager in self.particle_managers:
             particle_manager.render(self.camera)
 
+        for (endpoint,) in self.level.endpoint.values():
+            endpoint.image.draw(dstrect=endpoint.rect.topleft - self.camera)
+
         player_texture = self.player.animation.update(self.player.state)
         player_texture.draw(
             dstrect=self.player.rect.topleft - self.camera, flip_x=self.player.flip
@@ -965,8 +1054,8 @@ class Tutorial:
             pool.texture.draw(dstrect=pool.position - self.camera)
 
         mouse_pos = (
-            pygame.Vector2(pygame.mouse.get_pos()).elementwise() / common.renderer.scale
-        )
+            pygame.Vector2(pygame.mouse.get_pos()).elementwise() / common.window.size
+        ).elementwise() * settings.SIZE
         mouse_just_pressed = False
         for event in common.events:
             if event.type == pygame.MOUSEBUTTONDOWN:

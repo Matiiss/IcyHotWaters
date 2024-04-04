@@ -5,6 +5,7 @@ import math
 import random
 import types
 import functools
+import sys
 
 import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
@@ -20,7 +21,7 @@ class MainMenu:
         self.ui_manager = ui.UIManager()
         self.ui_manager.add(
             ui.Button(
-                (settings.WIDTH / 2, settings.HEIGHT / 2 - 48),
+                (settings.WIDTH / 2, settings.HEIGHT / 2 - 24 - 48),
                 "PLAY",
                 pressed_image=assets.images["button_pressed_green_surf"],
                 callback=lambda: common.set_current_state(GamePlay())
@@ -28,16 +29,22 @@ class MainMenu:
             initial_selected=True,
         ).add(
             ui.Button(
-                (settings.WIDTH / 2, settings.HEIGHT / 2),
+                (settings.WIDTH / 2, settings.HEIGHT / 2 - 24),
                 "TUTORIAL",
                 pressed_image=assets.images["button_pressed_yellow_surf"],
                 callback=lambda: common.set_current_state(Tutorial()),
             ),
             ui.Button(
-                (settings.WIDTH / 2, settings.HEIGHT / 2 + 48),
+                (settings.WIDTH / 2, settings.HEIGHT / 2 + 24),
                 "SETTINGS",
                 pressed_image=assets.images["button_pressed_blue_surf"],
                 callback=lambda: common.set_current_state(Settings())
+            ),
+            ui.Button(
+                (settings.WIDTH / 2, settings.HEIGHT / 2 + 24 + 48),
+                "EXIT",
+                pressed_image=assets.images["button_pressed_surf"],
+                callback=lambda: sys.exit()
             ),
         )
 
